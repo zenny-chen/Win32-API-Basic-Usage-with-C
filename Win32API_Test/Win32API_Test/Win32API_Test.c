@@ -13,6 +13,8 @@ static HINSTANCE hInst;             // 当前实例
 static HWND sMainWindow;            // main window handler
 static HWND sClickMeButton;         // `click me` button handler
 static HWND sStaticText;            // static control
+static HWND sEditText;              // edit control
+static HWND sComboBox;              // combo box control
 static HBRUSH sBackgroundBrush;     // background brush
 
 static WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
@@ -83,14 +85,13 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_RBUTTONDOWN:
         SetTimer(hWnd, 1, 10, MyTimerProc);
         sWindowColorStyle = WindowColorStyle_GRAY;
-        //RedrawWindow(sStaticText, NULL, 0, RDW_INVALIDATE | RDW_UPDATENOW);
         RedrawWindow(hWnd, NULL, 0, RDW_INVALIDATE | RDW_UPDATENOW);
         break;
 
     case WM_LBUTTONDOWN:
         sWindowColorStyle = WindowColorStyle_DEFAULT;
-        //RedrawWindow(sStaticText, NULL, 0, RDW_INVALIDATE | RDW_UPDATENOW);
         RedrawWindow(hWnd, 0, 0, RDW_INVALIDATE | RDW_UPDATENOW);
+        SetWindowText(sStaticText, L"This is a static control!");
         break;
 
     case WM_COMMAND:
@@ -103,7 +104,22 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             switch (notifCode)
             {
             case BN_CLICKED:
-                MessageBox(hWnd, L"Clicked Me!!", L"Notice", MB_OK);
+            {
+                WCHAR msgBuf[1024];
+
+                WCHAR editContent[512];
+                GetWindowText(sEditText, editContent, 512);
+
+                UINT ItemIndex = SendMessage(sComboBox, CB_GETCURSEL, 0, 0);
+                WCHAR itemContent[64];
+                SendMessage(sComboBox, CB_GETLBTEXT, ItemIndex, (LPARAM)itemContent);
+
+                wsprintf(msgBuf, L"Clicked Me!!\nThe edit control content is: %s.\nCombo box item content: %s.", editContent, itemContent);
+                SetWindowText(sStaticText, L"Button clicked!");
+
+                MessageBox(hWnd, msgBuf, L"Notice", MB_OK);
+            }
+               
                 break;
 
             default:
@@ -258,7 +274,6 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     x += clickMeWidth + 10;
 
     int const staticTextWidth = GetControlWidth(120);
-
     sStaticText = CreateWindowW(
         L"STATIC",
         L"This is a static control!",
@@ -271,6 +286,49 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         NULL,
         hInstance,
         NULL);
+
+    x += staticTextWidth + 20;
+
+    int const editControlWidth = GetControlWidth(120);
+    sEditText = CreateWindowW(
+        L"EDIT",
+        L"",
+        WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT,
+        x,
+        y,
+        editControlWidth,
+        controlHeight,
+        hWnd,
+        NULL,
+        hInstance,
+        NULL);
+
+    x = 10;
+    y += controlHeight + 20;
+
+    int const comboBoxHeight = GetControlHeight(200);
+
+    sComboBox = CreateWindowW(
+        L"COMBOBOX", 
+        L"",
+        WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS,
+        x, 
+        y,
+        editControlWidth,
+        comboBoxHeight,
+        hWnd, 
+        NULL, 
+        hInstance,
+        NULL);
+
+    // Add string to combobox.
+    SendMessage(sComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item1");
+    SendMessage(sComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item2");
+    SendMessage(sComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item3");
+
+    // Send the CB_SETCURSEL message to display an initial item in the selection field
+    UINT const selectedItem = 0;
+    SendMessage(sComboBox, CB_SETCURSEL, selectedItem, 0);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
