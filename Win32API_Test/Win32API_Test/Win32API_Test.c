@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "Win32API_Test.h"
+#include <CommCtrl.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -18,6 +19,8 @@ static HWND sEditText;              // edit control
 static HWND sComboBox;              // combo box control
 static HWND sGroupBox;              // group box control
 static HWND sRadioButtons[3];       // radio button controls
+static HWND sListBox;               // list box control
+static HWND sListView;              // list view control
 static HBRUSH sBackgroundBrush;     // background brush
 
 static WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
@@ -280,8 +283,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     int const clickMeWidth = GetControlWidth(70);
     int const controlHeight = GetControlHeight(25);
 
-    sClickMeButton = CreateWindowW(
-        L"BUTTON",          // Predefined class; Unicode assumed 
+    sClickMeButton = CreateWindow(
+        WC_BUTTON,          // Predefined class; Unicode assumed 
         L"Click Me",        // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         x,                  // x position 
@@ -295,8 +298,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     x += clickMeWidth + 20;
 
-    sCheckBox = CreateWindowW(
-        L"BUTTON",
+    sCheckBox = CreateWindow(
+        WC_BUTTON,
         L"Check Box",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
         x,
@@ -311,8 +314,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     x += clickMeWidth + 20;
 
     int const staticTextWidth = GetControlWidth(100);
-    sStaticText = CreateWindowW(
-        L"STATIC",
+    sStaticText = CreateWindow(
+        WC_STATIC,
         L"This is a static control!",
         WS_VISIBLE | WS_CHILD | SS_LEFTNOWORDWRAP,
         x,
@@ -327,8 +330,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     x += staticTextWidth + 20;
 
     int const editControlWidth = GetControlWidth(120);
-    sEditText = CreateWindowW(
-        L"EDIT",
+    sEditText = CreateWindow(
+        WC_EDIT,
         L"",
         WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT,
         x,
@@ -346,8 +349,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     int const comboBoxWidth = GetControlWidth(60);
     int const comboBoxHeight = GetControlHeight(200);
 
-    sComboBox = CreateWindowW(
-        L"COMBOBOX", 
+    sComboBox = CreateWindow(
+        WC_COMBOBOX, 
         L"",
         WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS,
         x, 
@@ -373,8 +376,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     int const groupBoxWidth = GetControlWidth(200);
     int const groupBoxHeight = GetControlHeight(50);
 
-    sGroupBox = CreateWindowW(
-        L"BUTTON",
+    sGroupBox = CreateWindow(
+        WC_BUTTON,
         L"Radio group",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
         x,
@@ -394,8 +397,8 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     int const radioY = (groupBoxHeight - radioButtonHeight) / 2 + GetControlHeight(5);
     for (int i = 0; i < radioButtonCount; i++)
     {
-        sRadioButtons[i] = CreateWindowW(
-            L"BUTTON",
+        sRadioButtons[i] = CreateWindow(
+            WC_BUTTON,
             sRadioButtonNames[i],
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON,
             radioX,
@@ -411,6 +414,40 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     }
     // select radio 1 by default
     SendMessage(sRadioButtons[0], BM_SETCHECK, BST_CHECKED, 0UL);
+
+    y += groupBoxHeight + 30;
+    int const listControlMargin = GetControlWidth(20);
+    x = listControlMargin;
+    int const listBoxWidth = (sWindowWidth - 3 * listControlMargin) / 2;
+    int const listBoxHeight = sWindowHeight - y - 100;
+
+    sListBox = CreateWindow(
+        WC_LISTBOX,
+        NULL,
+        WS_TABSTOP | WS_VISIBLE | WS_BORDER | WS_CHILD | LBS_USETABSTOPS | LBS_HASSTRINGS | WS_VSCROLL,
+        x,
+        y,
+        listBoxWidth,
+        listBoxHeight,
+        hWnd,
+        NULL,
+        hInstance,
+        NULL);
+
+    x += listBoxWidth + listControlMargin;
+
+    sListView = CreateWindow(
+        WC_LISTVIEW,
+        NULL,
+        WS_TABSTOP | WS_VISIBLE | WS_BORDER | WS_CHILD | LVS_OWNERDATA | WS_VSCROLL | LVS_ALIGNLEFT | LVS_LIST | LVS_SINGLESEL,
+        x,
+        y,
+        listBoxWidth,
+        listBoxHeight,
+        hWnd,
+        NULL,
+        hInstance,
+        NULL);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
