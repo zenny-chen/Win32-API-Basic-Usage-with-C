@@ -12,15 +12,22 @@
 static HINSTANCE hInst;             // 当前实例
 static HWND sMainWindow;            // main window handler
 static HWND sClickMeButton;         // `click me` button handler
+static HWND sCheckBox;              // check box control
 static HWND sStaticText;            // static control
 static HWND sEditText;              // edit control
 static HWND sComboBox;              // combo box control
+static HWND sGroupBox;              // group box control
+static HWND sRadioButtons[3];       // radio button controls
 static HBRUSH sBackgroundBrush;     // background brush
 
 static WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 static WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 
 static LONG sWindowWidth, sWindowHeight;
+
+static const WCHAR* const sRadioButtonNames[ARRAYSIZE(sRadioButtons)] = {
+    L"Radio 1", L"Radio 2", L"Radio 3"
+};
 
 static enum WindowColorStyle {
     WindowColorStyle_NONE,
@@ -66,6 +73,17 @@ static INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+static int GetSelectedRadioButtonIndex(void)
+{
+    int const radioButtonCount = (int)ARRAYSIZE(sRadioButtons);
+    for (int i = 0; i < radioButtonCount; i++)
+    {
+        DWORD const state = SendMessage(sRadioButtons[i], BM_GETSTATE, 0UL, 0UL);
+        if (state == BST_CHECKED)
+            return i;
+    }
 }
 
 //
@@ -114,7 +132,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 WCHAR itemContent[64];
                 SendMessage(sComboBox, CB_GETLBTEXT, ItemIndex, (LPARAM)itemContent);
 
-                wsprintf(msgBuf, L"Clicked Me!!\nThe edit control content is: %s.\nCombo box item content: %s.", editContent, itemContent);
+                DWORD const checkState = SendMessage(sCheckBox, BM_GETSTATE, 0UL, 0UL);
+                int const radioButtonIndex = GetSelectedRadioButtonIndex();
+
+                wsprintf(msgBuf, L"Clicked Me!!\nThe edit control content is: %s.\nCombo box item content: %s.\nIs checked? %s\nSelected radio Button: %s\n", 
+                    editContent, itemContent, checkState == BST_CHECKED ? L"YES" : L"NO", sRadioButtonNames[radioButtonIndex]);
                 SetWindowText(sStaticText, L"Button clicked!");
 
                 MessageBox(hWnd, msgBuf, L"Notice", MB_OK);
@@ -255,7 +277,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     }
 
     int x = 10, y = 10;
-    int const clickMeWidth = GetControlWidth(100);
+    int const clickMeWidth = GetControlWidth(70);
     int const controlHeight = GetControlHeight(25);
 
     sClickMeButton = CreateWindowW(
@@ -271,9 +293,24 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         hInstance,
         NULL);              // Pointer not needed.
 
-    x += clickMeWidth + 10;
+    x += clickMeWidth + 20;
 
-    int const staticTextWidth = GetControlWidth(120);
+    sCheckBox = CreateWindowW(
+        L"BUTTON",
+        L"Check Box",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
+        x,
+        y,
+        clickMeWidth,
+        controlHeight,
+        hWnd,
+        NULL,
+        hInstance,
+        NULL);
+
+    x += clickMeWidth + 20;
+
+    int const staticTextWidth = GetControlWidth(100);
     sStaticText = CreateWindowW(
         L"STATIC",
         L"This is a static control!",
@@ -306,6 +343,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     x = 10;
     y += controlHeight + 20;
 
+    int const comboBoxWidth = GetControlWidth(60);
     int const comboBoxHeight = GetControlHeight(200);
 
     sComboBox = CreateWindowW(
@@ -314,7 +352,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS,
         x, 
         y,
-        editControlWidth,
+        comboBoxWidth,
         comboBoxHeight,
         hWnd, 
         NULL, 
@@ -329,6 +367,50 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     // Send the CB_SETCURSEL message to display an initial item in the selection field
     UINT const selectedItem = 0;
     SendMessage(sComboBox, CB_SETCURSEL, selectedItem, 0);
+
+    x += comboBoxWidth + 20;
+
+    int const groupBoxWidth = GetControlWidth(200);
+    int const groupBoxHeight = GetControlHeight(50);
+
+    sGroupBox = CreateWindowW(
+        L"BUTTON",
+        L"Radio group",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
+        x,
+        y,
+        groupBoxWidth,
+        groupBoxHeight,
+        hWnd,
+        NULL,
+        hInstance,
+        NULL);
+
+    int const radioButtonCount = (int)ARRAYSIZE(sRadioButtons);
+    int const radioButtonMargin = 10;
+    int const radioButtonWidth = (groupBoxWidth - (radioButtonCount + 1) * radioButtonMargin) / radioButtonCount;
+    int const radioButtonHeight = groupBoxHeight / 2;
+    int radioX = radioButtonMargin;
+    int const radioY = (groupBoxHeight - radioButtonHeight) / 2 + GetControlHeight(5);
+    for (int i = 0; i < radioButtonCount; i++)
+    {
+        sRadioButtons[i] = CreateWindowW(
+            L"BUTTON",
+            sRadioButtonNames[i],
+            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON,
+            radioX,
+            radioY,
+            radioButtonWidth,
+            radioButtonHeight,
+            sGroupBox,
+            NULL,
+            hInstance,
+            NULL);
+
+        radioX += radioButtonWidth + radioButtonMargin;
+    }
+    // select radio 1 by default
+    SendMessage(sRadioButtons[0], BM_SETCHECK, BST_CHECKED, 0UL);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
