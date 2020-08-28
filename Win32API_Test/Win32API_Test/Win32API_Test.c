@@ -32,6 +32,12 @@ static const WCHAR* const sRadioButtonNames[ARRAYSIZE(sRadioButtons)] = {
     L"Radio 1", L"Radio 2", L"Radio 3"
 };
 
+static const WCHAR* const sListBoxItems[3] = {
+    L"list box item 1",
+    L"list box item 2",
+    L"list box item 3",
+};
+
 static enum WindowColorStyle {
     WindowColorStyle_NONE,
     WindowColorStyle_GRAY,
@@ -40,12 +46,12 @@ static enum WindowColorStyle {
 
 static int GetControlWidth(int width)
 {
-    return (float)sWindowWidth / 640.0f * (float)width + 0.5f;
+    return (int)((float)sWindowWidth / 640.0f * (float)width + 0.5f);
 }
 
 static int GetControlHeight(int height)
 {
-    return (float)sWindowHeight / 480.0f * (float)height + 0.5f;
+    return (int)((float)sWindowHeight / 480.0f * (float)height + 0.5f);
 }
 
 static HINSTANCE GetInstanceFromWindow(HWND hWnd)
@@ -83,10 +89,12 @@ static int GetSelectedRadioButtonIndex(void)
     int const radioButtonCount = (int)ARRAYSIZE(sRadioButtons);
     for (int i = 0; i < radioButtonCount; i++)
     {
-        DWORD const state = SendMessage(sRadioButtons[i], BM_GETSTATE, 0UL, 0UL);
+        LRESULT const state = SendMessage(sRadioButtons[i], BM_GETSTATE, 0UL, 0UL);
         if (state == BST_CHECKED)
             return i;
     }
+
+    return 0;
 }
 
 //
@@ -131,11 +139,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 WCHAR editContent[512];
                 GetWindowText(sEditText, editContent, 512);
 
-                UINT ItemIndex = SendMessage(sComboBox, CB_GETCURSEL, 0, 0);
+                LRESULT ItemIndex = SendMessage(sComboBox, CB_GETCURSEL, 0, 0);
                 WCHAR itemContent[64];
                 SendMessage(sComboBox, CB_GETLBTEXT, ItemIndex, (LPARAM)itemContent);
 
-                DWORD const checkState = SendMessage(sCheckBox, BM_GETSTATE, 0UL, 0UL);
+                LRESULT const checkState = SendMessage(sCheckBox, BM_GETSTATE, 0UL, 0UL);
                 int const radioButtonIndex = GetSelectedRadioButtonIndex();
 
                 wsprintf(msgBuf, L"Clicked Me!!\nThe edit control content is: %s.\nCombo box item content: %s.\nIs checked? %s\nSelected radio Button: %s\n", 
@@ -150,7 +158,20 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             default:
                 break;
             }
-            return;
+        }
+        else if ((HWND)lParam == sListBox)
+        {
+            DWORD notifCode = HIWORD(wParam);
+            if (notifCode == LBN_DBLCLK)
+            {
+                LRESULT selectedIndex = SendMessage(sListBox, LB_GETCURSEL, 0U, 0U);
+                if (selectedIndex != LB_ERR)
+                {
+                    WCHAR strBuf[128];
+                    wsprintf(strBuf, L"Selected list item: %s\n", sListBoxItems[selectedIndex]);
+                    MessageBox(hWnd, strBuf, L"Notice", MB_OK);
+                }
+            }
         }
 
         // 分析菜单选择:
@@ -162,9 +183,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
         }
+
+        return DefWindowProc(hWnd, message, wParam, lParam);
     }
     break;
 
@@ -424,7 +445,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     sListBox = CreateWindow(
         WC_LISTBOX,
         NULL,
-        WS_TABSTOP | WS_VISIBLE | WS_BORDER | WS_CHILD | LBS_USETABSTOPS | LBS_HASSTRINGS | WS_VSCROLL,
+        WS_TABSTOP | WS_VISIBLE | WS_BORDER | WS_CHILD | LBS_USETABSTOPS | LBS_HASSTRINGS | LBS_NOTIFY | WS_VSCROLL,
         x,
         y,
         listBoxWidth,
@@ -434,6 +455,10 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         hInstance,
         NULL);
 
+    size_t listBoxItemCount = sizeof(sListBoxItems) / sizeof(sListBoxItems[0]);
+    for(size_t i = 0; i < listBoxItemCount; i++)
+        SendMessage(sListBox, LB_ADDSTRING, 0U, (LPARAM)sListBoxItems[i]);
+    
     x += listBoxWidth + listControlMargin;
 
     sListView = CreateWindow(
