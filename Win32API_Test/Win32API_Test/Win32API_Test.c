@@ -130,9 +130,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         if ((HWND)lParam == sClickMeButton)
         {
             DWORD notifCode = HIWORD(wParam);
-            switch (notifCode)
-            {
-            case BN_CLICKED:
+            if (notifCode == BN_CLICKED)
             {
                 WCHAR msgBuf[1024];
 
@@ -152,12 +150,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
                 MessageBox(hWnd, msgBuf, L"Notice", MB_OK);
             }
-               
-                break;
-
-            default:
-                break;
-            }
+            else
+                return DefWindowProc(hWnd, message, wParam, lParam);
         }
         else if ((HWND)lParam == sListBox)
         {
@@ -172,6 +166,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     MessageBox(hWnd, strBuf, L"Notice", MB_OK);
                 }
             }
+            else
+                return DefWindowProc(hWnd, message, wParam, lParam);
         }
 
         // 分析菜单选择:
@@ -183,9 +179,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
-        }
 
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
     }
     break;
 
