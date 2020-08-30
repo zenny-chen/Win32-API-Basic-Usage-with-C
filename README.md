@@ -2,7 +2,7 @@
 Win32 API Basic Usage with C
 
 
-```masm
+```asm
 ; 汇编源文件func.asm
 
 .model flat
